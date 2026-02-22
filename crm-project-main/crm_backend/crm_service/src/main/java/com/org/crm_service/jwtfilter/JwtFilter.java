@@ -33,6 +33,14 @@ public class JwtFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+
+        // ✅ Skip authentication endpoints
+        if (path.startsWith("/auth/login") || path.startsWith("/auth/register")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         try {
@@ -60,15 +68,11 @@ public class JwtFilter extends OncePerRequestFilter {
         }
         catch (ExpiredJwtException e) {
 
-            System.out.println("JWT expired!");
-
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\":\"Token expired\"}");
         }
         catch (Exception e) {
-
-            System.out.println("Invalid JWT!");
 
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
