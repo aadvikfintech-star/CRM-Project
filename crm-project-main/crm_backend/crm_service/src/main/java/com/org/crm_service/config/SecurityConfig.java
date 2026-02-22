@@ -4,55 +4,59 @@ import com.org.crm_service.jwtfilter.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http)
-            throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable())
 
-                .authorizeHttpRequests(auth -> auth
+            .sessionManagement(session ->
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
 
+            .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers(
-                                "/auth/login",
-                                "/auth/register",
-                                "/auth/admin"
-                        ).permitAll()
+                // Allow health check & browser access
+                .requestMatchers("/", "/error").permitAll()
 
+                // Allow auth APIs
+                .requestMatchers(
+                        "/auth/login",
+                        "/auth/register",
+                        "/auth/admin"
+                ).permitAll()
 
-                        .requestMatchers(
-                                "/auth/approve/**",
-                                "/auth/reject/**",
-                                "/auth/pending"
-                        ).hasRole("ADMIN")
+                // Allow OPTIONS (Render / Angular preflight)
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                // Admin only
+                .requestMatchers(
+                        "/auth/approve/**",
+                        "/auth/reject/**",
+                        "/auth/pending"
+                ).hasRole("ADMIN")
 
-                        .anyRequest().authenticated()
-                )
+                .anyRequest().authenticated()
+            )
 
-                .addFilterBefore(
-                        jwtFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 
     @Bean
     public PasswordEncoder passwordEncoder(){
