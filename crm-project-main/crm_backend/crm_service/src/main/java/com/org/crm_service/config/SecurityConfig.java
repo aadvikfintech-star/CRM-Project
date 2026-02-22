@@ -22,16 +22,21 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+            // 🔥 Enable CORS (IMPORTANT)
+            .cors(cors -> {})
+
+            // Disable CSRF
             .csrf(csrf -> csrf.disable())
 
+            // Stateless JWT session
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
 
             .authorizeHttpRequests(auth -> auth
 
-                // Allow health check & browser access
-                .requestMatchers("/", "/error").permitAll()
+                // Allow root & health
+                .requestMatchers("/", "/error", "/favicon.ico").permitAll()
 
                 // Allow auth APIs
                 .requestMatchers(
@@ -40,19 +45,21 @@ public class SecurityConfig {
                         "/auth/admin"
                 ).permitAll()
 
-                // Allow OPTIONS (Render / Angular preflight)
+                // Allow preflight OPTIONS requests
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Admin only
+                // Admin only APIs
                 .requestMatchers(
                         "/auth/approve/**",
                         "/auth/reject/**",
                         "/auth/pending"
                 ).hasRole("ADMIN")
 
+                // All other APIs require login
                 .anyRequest().authenticated()
             )
 
+            // Add JWT Filter
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
