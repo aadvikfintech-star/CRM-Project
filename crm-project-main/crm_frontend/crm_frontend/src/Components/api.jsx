@@ -3,11 +3,9 @@ import { toast } from "react-toastify";
 import { getToken, logout } from "./auth";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: import.meta.env.VITE_API_URL,
   timeout: 15000
 });
-
-
 
 api.interceptors.request.use(config => {
   const token = getToken();
@@ -18,8 +16,6 @@ api.interceptors.request.use(config => {
 
   return config;
 });
-
-
 
 let isRedirecting = false;
 
@@ -37,7 +33,6 @@ api.interceptors.response.use(
       err.config?.url?.includes("/auth/login") ||
       err.config?.url?.includes("/auth/register");
 
-    
     if (status === 401 && !isAuthCall) {
 
       if (!isRedirecting) {
@@ -53,12 +48,10 @@ api.interceptors.response.use(
       }
     }
 
-   
     if (status === 403 && !isAuthCall) {
       toast.error(errorMsg || "Access denied");
     }
 
-   
     if (status >= 400 && status < 500 && !isAuthCall) {
       toast.error(errorMsg);
     }
